@@ -1,7 +1,8 @@
 # menu.py
 from Utter import *
+from venta_funtions import *
 from DB import get_db_connection
-
+#---------------------------------------------------Validar opciones que ingrese el usuario---------------------------------------
 def obtener_opcion(menu_texto, opciones_validas):
     """Obtiene una opción válida del usuario para un menú específico."""
     while True:
@@ -16,6 +17,7 @@ def obtener_opcion(menu_texto, opciones_validas):
             print("---------------------------------------------------------------------------")
             print(utter_entrada_invalida)
 
+#----------------------------------------------------------------Menú venta--------------------------------------------------------
 def menu_venta():
     while True:
         opciones_venta = [0, 1, 2]
@@ -24,12 +26,18 @@ def menu_venta():
         if opcion_venta == 1:
             print(utter_promociones)
             input(utter_volver)
+            print("---------------------------------------------------------------------------")
         elif opcion_venta == 2:
             print(utter_categoria)
-            input(utter_volver)
+            imprimir_nombres_de_categoria()
+            opcion_categoria = int(input("Ingrese el número de la categoría para ver su contenido: "))
+            mostrar_contenido_categoria(opcion_categoria)
+            input(":Inrese un número para volver al menú anterior")
+            print("---------------------------------------------------------------------------")
         elif opcion_venta == 0:
             return
 
+#-------------------------------------------------------Menú principal--------------------------------------------------------------
 def menu_principal():
     while True:
         opciones_principal = [0, 1, 2, 3, 4, 5]
@@ -50,8 +58,12 @@ def menu_principal():
             print(utter_registrar)
             input("Presione Enter para volver al menú principal...")
         elif opcion == 0:
+            print(utter_registrar)
+            input("Presione Enter para volver al menú principal...")
+        elif opcion == 0:
             print("Saliendo del programa.")
             break
 
+#----------------------------------Iniciar menú---------------------------------------------------------------------------------------
 if __name__ == "__main__":
     menu_principal()
