@@ -10,7 +10,7 @@ utter_logeo="Ingrese sus credenciales para logearse"
 
 utter_registrar="Ingrese sus credenciales para registrarlo"
 
-utter_promociones="Por el momento no tenemos promociones disponibles"
+utter_promociones="Tenemos promciones en esta las siguientes categorias:"
 
 utter_categoria="Estas son nuestras categorias:"
 

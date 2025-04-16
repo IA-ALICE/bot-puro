@@ -25,14 +25,17 @@ def menu_venta():
         print("---------------------------------------------------------------------------")
         if opcion_venta == 1:
             print(utter_promociones)
-            input(utter_volver)
+            imprimir_nombres_de_categoria()
+            opcion_promociones = int(input("Ingrese el número de la categoría para ver sus promociones: "))
+            mostrar_contenido_promociones(opcion_promociones)
+            input(":Inrese un número para volver al menú anterior")
             print("---------------------------------------------------------------------------")
         elif opcion_venta == 2:
             print(utter_categoria)
             imprimir_nombres_de_categoria()
             opcion_categoria = int(input("Ingrese el número de la categoría para ver su contenido: "))
             mostrar_contenido_categoria(opcion_categoria)
-            input(":Inrese un número para volver al menú anterior")
+            input("Ingrese un número para volver al menú anterior")
             print("---------------------------------------------------------------------------")
         elif opcion_venta == 0:
             return
