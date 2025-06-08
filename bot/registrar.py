@@ -1,5 +1,6 @@
 import re # Importar el módulo de expresiones regulares
 from bot.DB import get_db_connection
+import psycopg2 # Importar psycopg2 para manejar sus errores específicos
 
 def es_email_valido(email):
     """
@@ -64,14 +65,15 @@ def registrar_nuevo_cliente(nombre, email=None, telefono=None, ruc=None):
 
         # Verificar si el Email ya existe (si se proporcionó)
         if email:
-            cursor.execute("SELECT ClienteID FROM dbo.Cliente WHERE Email = ?", (email,))
+            # PostgreSQL placeholder is %s, and schema/table/column names often need double quotes
+            cursor.execute("SELECT \"ClienteID\" FROM \"dbo\".\"Cliente\" WHERE \"Email\" = %s", (email,))
             if cursor.fetchone():
                 print(f"DEBUG (registrar_nuevo_cliente): Email '{email}' ya existe.")
                 return False, "El Email ya está en uso. Por favor, intente con otro o inicie sesión.", None
 
         # Verificar si el RUC ya existe (si se proporcionó)
         if ruc:
-            cursor.execute("SELECT ClienteID FROM dbo.Cliente WHERE RUC = ?", (ruc,))
+            cursor.execute("SELECT \"ClienteID\" FROM \"dbo\".\"Cliente\" WHERE \"RUC\" = %s", (ruc,))
             if cursor.fetchone():
                 print(f"DEBUG (registrar_nuevo_cliente): RUC '{ruc}' ya existe.")
                 return False, "El RUC ya está en uso. Por favor, intente con otro o inicie sesión.", None
@@ -79,8 +81,9 @@ def registrar_nuevo_cliente(nombre, email=None, telefono=None, ruc=None):
         # --- Fin de Validaciones ---
 
         # Si no existe, inserta el nuevo cliente
+        # PostgreSQL placeholder is %s
         cursor.execute(
-            'INSERT INTO dbo.Cliente (Nombre, Email, Telefono, RUC) VALUES (?, ?, ?, ?)',
+            'INSERT INTO "dbo"."Cliente" ("Nombre", "Email", "Telefono", "RUC") VALUES (%s, %s, %s, %s)',
             (nombre, email, telefono, ruc)
         )
         conn.commit()
@@ -89,27 +92,27 @@ def registrar_nuevo_cliente(nombre, email=None, telefono=None, ruc=None):
         registered_identifier = email if email else ruc # Usar email o ruc como identificador principal
         return True, f"¡Registro exitoso! Te damos la bienvenida {nombre}.", registered_identifier
 
-    except pyodbc.IntegrityError as e:
-        sqlstate = e.args[0]
-        print(f"ERROR (registrar_nuevo_cliente - pyodbc IntegrityError): {sqlstate} - {e}")
+    # Catch psycopg2.errors.IntegrityError specifically for uniqueness constraints
+    except psycopg2.IntegrityError as e: # Changed from pyodbc.IntegrityError
+        print(f"ERROR (registrar_nuevo_cliente - psycopg2 IntegrityError): {e.pgcode if hasattr(e, 'pgcode') else 'N/A'} - {e.pgerror if hasattr(e, 'pgerror') else e}")
         if conn:
             conn.rollback() # Si hay un error de DB, revertir la transacción
         
-        # Este error es para violaciones de unicidad (duplicados de Email o RUC)
+        # PostgreSQL error codes for unique violation is '23505'
+        # or you can parse the error message.
         error_msg = str(e)
-        if "UNIQUE" in error_msg.upper() or "PRIMARY KEY" in error_msg.upper():
-            if "Email" in error_msg:
+        if hasattr(e, 'pgcode') and e.pgcode == '23505': # PostgreSQL unique violation code
+            if "email" in error_msg.lower(): # Check if the error message mentions 'email'
                 return False, "El Email ya está en uso. Por favor, intente con otro o inicie sesión.", None
-            elif "RUC" in error_msg:
+            elif "ruc" in error_msg.lower(): # Check if the error message mentions 'ruc'
                 return False, "El RUC ya está en uso. Por favor, intente con otro o inicie sesión.", None
             else:
                 return False, "Dato duplicado (Email o RUC) ya registrado. Por favor, verifique.", None
-        # Para otros errores de integridad que no sean de unicidad (ej. NOT NULL, si no se validaron antes)
+        # For other integrity errors (e.g., NOT NULL constraint), you might need to check other pgcodes or messages
         return False, f"Error de integridad de la base de datos al registrar: {str(e)}. Por favor, verifique sus datos.", None
     
-    except pyodbc.Error as e:
-        sqlstate = e.args[0]
-        print(f"ERROR (registrar_nuevo_cliente - pyodbc general): {sqlstate} - {e}")
+    except psycopg2.Error as e: # Catch other psycopg2 errors (e.g., operational errors)
+        print(f"ERROR (registrar_nuevo_cliente - psycopg2 general): {e.pgcode if hasattr(e, 'pgcode') else 'N/A'} - {e.pgerror if hasattr(e, 'pgerror') else e}")
         if conn:
             conn.rollback() # Si hay un error, revertir la transacción
         return False, f"Ocurrió un error de base de datos al registrar. Por favor, intente de nuevo más tarde.", None

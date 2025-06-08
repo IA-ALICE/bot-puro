@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, session
 from flask_session import Session
 import os
 import secrets
+import psycopg2 # Import psycopg2 to handle its specific errors
 
 from bot.venta_funtions import obtener_nombres_de_categoria, obtener_contenido_promociones, obtener_contenido_categoria
 from bot.Servicios import obtener_servicios_principales, obtener_catalogo_por_servicio, obtener_preguntas_por_catalogo, obtener_respuestas_de_la_pregunta
@@ -86,15 +87,29 @@ def chat():
             
             # Asegurar que haya suficientes partes para Nombre y Teléfono (obligatorio)
             # y que email/ruc se manejen como opcionales
-            if not (2 <= len(parts) <= 4): # Mínimo 2 (Nombre, Telefono) y Máximo 4 (Nombre, Email, Teléfono, RUC)
-                raise ValueError("Número incorrecto de campos. Debe ser 'nombre,email,telefono,ruc' o 'nombre,,telefono,ruc' o 'nombre,email,telefono,'.")
+            # Revised validation for parts based on 'nombre,email,telefono,ruc' where email/ruc can be empty
+            # and 'telefono' is mandatory.
+            # Minimum parts: name, (empty email), phone, (empty ruc) -> 3 parts
+            # Example: "Juan Perez,,987654321," or "Juan Perez,juan@example.com,987654321,"
+            # The split will always create 4 parts if commas are used correctly, even if empty.
+            # So, check if parts are at least 3 or 4, and handle the content.
+            if not (2 <= len(parts) <= 4): # Minimum is 2 (nombre, telefono if email/ruc are implied empty)
+                                        # Max 4 (nombre, email, telefono, ruc)
+                raise ValueError("Número incorrecto de campos. El formato esperado es 'nombre,email,telefono,ruc'. Email y/o RUC pueden ser vacíos.")
             
-            nombre = parts[0]
+            nombre = parts[0] if len(parts) > 0 else None
             email = parts[1] if len(parts) > 1 and parts[1] else None # Email puede ser vacío
-            telefono = parts[2] if len(parts) > 2 and parts[2] else None # Teléfono puede ser vacío
+            telefono = parts[2] if len(parts) > 2 and parts[2] else None # Telefono puede ser vacío
             ruc = parts[3] if len(parts) > 3 and parts[3] else None # RUC puede ser vacío
 
             # Validar que al menos Telefono sea proporcionado y que al menos (Email o RUC) existan
+            if not nombre:
+                bot_response_text = "El nombre es obligatorio para el registro. Por favor, intente de nuevo o 0 para volver."
+                session['context'] = 'register_prompt'
+                input_type = "text"
+                bot_options.append({"id": 0, "text": "0. Volver al menú principal"})
+                return jsonify({"response": bot_response_text, "options": bot_options, "input_type": input_type})
+                
             if not telefono:
                 bot_response_text = "El número de teléfono es obligatorio para el registro. Por favor, intente de nuevo o 0 para volver."
                 session['context'] = 'register_prompt'
@@ -127,10 +142,9 @@ def chat():
             session['context'] = 'register_prompt'
             input_type = "text"
             bot_options.append({"id": 0, "text": "0. Volver al menú principal"})
-        except pyodbc.Error as db_error:
-            # Captura errores generales de pyodbc que puedan venir de DB.py si la conexión falla completamente
-            # (Aunque DB.py ya los maneja al retornar None, esta es una capa adicional)
-            print(f"DEBUG: Error de pyodbc en app.py: {db_error}")
+        except psycopg2.Error as db_error: # Changed from pyodbc.Error
+            # Catch general psycopg2 errors that might originate from DB.py or the functions called
+            print(f"DEBUG: Error de psycopg2 en app.py: {db_error}")
             bot_response_text = "Ocurrió un error en la base de datos al procesar su solicitud. Por favor, intente de nuevo o 0 para volver."
             session['context'] = 'register_prompt'
             input_type = "text"
@@ -191,7 +205,7 @@ def chat():
                 bot_response_text += "\n\n" + get_main_menu_text(logged_in)
             else:
                 session['context'] = 'register_prompt'
-                bot_response_text = "Para registrarte, por favor, ingresa tus datos en el formato: nombre,email,telefono,ruc\n(Email o RUC pueden ser vacíos, pero el teléfono es obligatorio):"
+                bot_response_text = "Para registrarte, por favor, ingresa tus datos en el formato: nombre,email,telefono,ruc\n(Email y/o RUC pueden ser vacíos, pero el teléfono es obligatorio):"
                 input_type = "text"
         elif choice == 0:
             if logged_in:
@@ -200,14 +214,12 @@ def chat():
                 session['context'] = 'main_menu'
                 session['logged_in_user'] = None # Explicitly set to None after logout
                 bot_response_text += "\n\n" + get_main_menu_text(False) # Show guest menu after logout
-                # REMOVED: bot_options.append({"id": "restart", "text": "Reiniciar Bot"})
             else:
                 bot_response_text = "Cerrando la sesión. ¡Hasta pronto!"
                 session.clear()
                 session['context'] = 'main_menu'
                 session['logged_in_user'] = None
                 bot_response_text += "\n\n" + get_main_menu_text(False) # Revert to initial menu
-                # REMOVED: bot_options.append({"id": "restart", "text": "Reiniciar Bot"})
         else:
             bot_response_text = "Opción no válida. Por favor, seleccione una de las opciones del menú principal."
             bot_response_text += "\n\n" + get_main_menu_text(logged_in)
