@@ -142,7 +142,7 @@ def chat():
             session['context'] = 'register_prompt'
             input_type = "text"
             bot_options.append({"id": 0, "text": "0. Volver al menú principal"})
-        except psycopg2.Error as db_error: # Changed from pyodbc.Error
+        except psycopg2.Error as db_error:
             # Catch general psycopg2 errors that might originate from DB.py or the functions called
             print(f"DEBUG: Error de psycopg2 en app.py: {db_error}")
             bot_response_text = "Ocurrió un error en la base de datos al procesar su solicitud. Por favor, intente de nuevo o 0 para volver."

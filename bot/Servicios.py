@@ -11,16 +11,19 @@ def obtener_servicios_principales():
             return []
         cursor = conn.cursor()
         
-        # PostgreSQL placeholder is %s, and schema/table/column names often need double quotes
-        cursor.execute('SELECT "id", "Servicios" FROM "dbo"."Servicios"') # Use double quotes for schema/table/column names
+        # CORREGIDO: Nombres de columna en minúsculas y sin comillas dobles
+        # Asumiendo 'Servicios' se convirtió a 'servicios' y 'id' a 'id'.
+        # Si 'Servicios' es el nombre de la columna que contiene el texto del servicio,
+        # su nombre en minúsculas debería ser 'servicios' o 'nombre_servicio', etc.
+        # Aquí asumo 'servicios' por ser coherente con el nombre de la tabla.
+        cursor.execute('SELECT id, servicios FROM public.servicios') 
         
         servicios = []
         for row in cursor.fetchall():
-            # psycopg2 by default returns tuples, so access by index
             servicios.append({"id": row[0], "nombre": row[1]})
         print(f"DEBUG (obtener_servicios_principales): Servicios principales obtenidos: {servicios}")
         return servicios
-    except psycopg2.Error as e: # Catch psycopg2 specific errors
+    except psycopg2.Error as e:
         print(f"ERROR (obtener_servicios_principales - psycopg2): {e.pgcode if hasattr(e, 'pgcode') else 'N/A'} - {e.pgerror if hasattr(e, 'pgerror') else e}")
         return []
     except Exception as e:
@@ -39,22 +42,21 @@ def obtener_catalogo_por_servicio(servicio_id):
             return []
         cursor = conn.cursor()
         
-        # PostgreSQL placeholder is %s, and schema/table/column names often need double quotes
+        # CORREGIDO: Nombres de tablas y columnas en minúsculas y sin comillas dobles
         cursor.execute(
-            'SELECT cs."id", cs."catalogo", cs."precio" ' # Use double quotes
-            'FROM "dbo"."Servicios" s '
-            'JOIN "dbo"."Servicio_catalogo" sc ON s."id" = sc."id_servicio" ' # Use double quotes
-            'JOIN "dbo"."catalogo_servicio" cs ON sc."id_catalogo" = cs."id" ' # Use double quotes
-            'WHERE s."id" = %s', # Changed ? to %s
+            'SELECT cs.id, cs.catalogo, cs.precio '
+            'FROM public.servicios s ' # CORREGIDO: tabla servicios en minúsculas
+            'JOIN public.servicio_catalogo sc ON s.id = sc.id_servicio ' # CORREGIDO: tabla servicio_catalogo y columnas id, id_servicio
+            'JOIN public.catalogo_servicio cs ON sc.id_catalogo = cs.id ' # CORREGIDO: tabla catalogo_servicio y columnas id_catalogo, id
+            'WHERE s.id = %s', # Columna 'id'
             (servicio_id,)
         )
         catalogo = []
         for row in cursor.fetchall():
-            # Asegúrate de que el precio se convierta correctamente si es un tipo numérico en la DB
             catalogo.append({"id": row[0], "nombre_apartado": row[1], "precio": float(row[2]) if row[2] is not None else None})
         print(f"DEBUG (obtener_catalogo_por_servicio): Catálogo para servicio_id {servicio_id}: {catalogo}")
         return catalogo
-    except psycopg2.Error as e: # Catch psycopg2 specific errors
+    except psycopg2.Error as e:
         print(f"ERROR (obtener_catalogo_por_servicio - psycopg2): {e.pgcode if hasattr(e, 'pgcode') else 'N/A'} - {e.pgerror if hasattr(e, 'pgerror') else e}")
         return []
     except Exception as e:
@@ -73,9 +75,9 @@ def obtener_preguntas_por_catalogo(catalogo_id):
             return []
         cursor = conn.cursor()
         
-        # PostgreSQL placeholder is %s, and schema/table/column names often need double quotes
+        # CORREGIDO: Nombres de columnas en minúsculas y sin comillas dobles
         cursor.execute(
-            'SELECT "id_pregunta_servios", "pregunta" FROM "dbo"."pregunta_servicio" WHERE "id_catalogo_servicio" = %s', # Changed ? to %s
+            'SELECT id_pregunta_servios, pregunta FROM public.pregunta_servicio WHERE id_catalogo_servicio = %s',
             (catalogo_id,)
         )
         preguntas = []
@@ -83,7 +85,7 @@ def obtener_preguntas_por_catalogo(catalogo_id):
             preguntas.append({"id": row[0], "texto": row[1]})
         print(f"DEBUG (obtener_preguntas_por_catalogo): Preguntas para catalogo_id {catalogo_id}: {preguntas}")
         return preguntas
-    except psycopg2.Error as e: # Catch psycopg2 specific errors
+    except psycopg2.Error as e:
         print(f"ERROR (obtener_preguntas_por_catalogo - psycopg2): {e.pgcode if hasattr(e, 'pgcode') else 'N/A'} - {e.pgerror if hasattr(e, 'pgerror') else e}")
         return []
     except Exception as e:
@@ -102,9 +104,9 @@ def obtener_respuestas_de_la_pregunta(pregunta_id):
             return []
         cursor = conn.cursor()
         
-        # PostgreSQL placeholder is %s, and schema/table/column names often need double quotes
+        # CORREGIDO: Nombres de columnas en minúsculas y sin comillas dobles
         cursor.execute(
-            'SELECT "respuestas" FROM "dbo"."respuesta_servicios" WHERE "id_pregunta_servios" = %s', # Changed ? to %s
+            'SELECT respuestas FROM public.respuesta_servicios WHERE id_pregunta_servios = %s',
             (pregunta_id,)
         )
         respuestas = []
@@ -112,7 +114,7 @@ def obtener_respuestas_de_la_pregunta(pregunta_id):
             respuestas.append(row[0])
         print(f"DEBUG (obtener_respuestas_de_la_pregunta): Respuestas para pregunta_id {pregunta_id}: {respuestas}")
         return respuestas
-    except psycopg2.Error as e: # Catch psycopg2 specific errors
+    except psycopg2.Error as e:
         print(f"ERROR (obtener_respuestas_de_la_pregunta - psycopg2): {e.pgcode if hasattr(e, 'pgcode') else 'N/A'} - {e.pgerror if hasattr(e, 'pgerror') else e}")
         return []
     except Exception as e:

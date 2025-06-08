@@ -1,5 +1,5 @@
 from bot.DB import get_db_connection
-import psycopg2 # Import psycopg2 to handle its specific errors
+import psycopg2
 
 def verificar_credenciales(email_o_ruc):
     conn = None
@@ -10,29 +10,25 @@ def verificar_credenciales(email_o_ruc):
         cursor = conn.cursor()
 
         # Intenta buscar por Email
-        # En psycopg2, el placeholder es %s, no ?
-        cursor.execute("SELECT \"ClienteID\", \"Nombre\", \"Email\", \"RUC\" FROM \"dbo\".\"Cliente\" WHERE \"Email\" = %s", (email_o_ruc,))
+        # CORREGIDO: Nombres de columnas a minúsculas y sin comillas dobles
+        cursor.execute("SELECT clienteid, nombre, email, ruc FROM public.cliente WHERE email = %s", (email_o_ruc,))
         cliente = cursor.fetchone()
         if cliente:
-            # psycopg2.Row objects (returned by fetchone by default) can be accessed like tuples
-            # Adjust indexing based on the order of columns in your SELECT statement
-            # Assuming cliente is a tuple: (ClienteID, Nombre, Email, RUC)
-            print(f"DEBUG (verificar_credenciales): Cliente encontrado por Email: {cliente[1]}") # cliente[1] is Nombre
+            print(f"DEBUG (verificar_credenciales): Cliente encontrado por Email: {cliente[1]}")
             return True, f"Inicio de sesión exitoso como {cliente[1]}."
 
         # Si no se encuentra por Email, intenta buscar por RUC
-        cursor.execute("SELECT \"ClienteID\", \"Nombre\", \"Email\", \"RUC\" FROM \"dbo\".\"Cliente\" WHERE \"RUC\" = %s", (email_o_ruc,))
+        # CORREGIDO: Nombres de columnas a minúsculas y sin comillas dobles
+        cursor.execute("SELECT clienteid, nombre, email, ruc FROM public.cliente WHERE ruc = %s", (email_o_ruc,))
         cliente = cursor.fetchone()
         if cliente:
-            print(f"DEBUG (verificar_credenciales): Cliente encontrado por RUC: {cliente[1]}") # cliente[1] is Nombre
+            print(f"DEBUG (verificar_credenciales): Cliente encontrado por RUC: {cliente[1]}")
             return True, f"Inicio de sesión exitoso como {cliente[1]}."
         else:
             print("DEBUG (verificar_credenciales): Credenciales incorrectas o no encontradas.")
             return False, "Email o RUC incorrectos o no registrados."
 
-    except psycopg2.Error as ex: # Changed from pyodbc.Error
-        # psycopg2.Error objects have attributes like .pgcode and .pgerror
-        # ex.pgcode gives the SQLSTATE, ex.pgerror gives the message
+    except psycopg2.Error as ex:
         print(f"ERROR (verificar_credenciales): {ex.pgcode if hasattr(ex, 'pgcode') else 'N/A'} - {ex.pgerror if hasattr(ex, 'pgerror') else ex}")
         return False, f"Error al verificar credenciales: {ex}"
     except Exception as e:

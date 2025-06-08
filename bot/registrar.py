@@ -65,15 +65,16 @@ def registrar_nuevo_cliente(nombre, email=None, telefono=None, ruc=None):
 
         # Verificar si el Email ya existe (si se proporcionó)
         if email:
-            # PostgreSQL placeholder is %s, and schema/table/column names often need double quotes
-            cursor.execute("SELECT \"ClienteID\" FROM \"dbo\".\"Cliente\" WHERE \"Email\" = %s", (email,))
+            # CORREGIDO: Usar 'email' en minúsculas y sin comillas dobles
+            cursor.execute("SELECT clienteid FROM public.cliente WHERE email = %s", (email,))
             if cursor.fetchone():
                 print(f"DEBUG (registrar_nuevo_cliente): Email '{email}' ya existe.")
                 return False, "El Email ya está en uso. Por favor, intente con otro o inicie sesión.", None
 
         # Verificar si el RUC ya existe (si se proporcionó)
         if ruc:
-            cursor.execute("SELECT \"ClienteID\" FROM \"dbo\".\"Cliente\" WHERE \"RUC\" = %s", (ruc,))
+            # CORREGIDO: Usar 'ruc' en minúsculas y sin comillas dobles
+            cursor.execute("SELECT clienteid FROM public.cliente WHERE ruc = %s", (ruc,))
             if cursor.fetchone():
                 print(f"DEBUG (registrar_nuevo_cliente): RUC '{ruc}' ya existe.")
                 return False, "El RUC ya está en uso. Por favor, intente con otro o inicie sesión.", None
@@ -81,9 +82,9 @@ def registrar_nuevo_cliente(nombre, email=None, telefono=None, ruc=None):
         # --- Fin de Validaciones ---
 
         # Si no existe, inserta el nuevo cliente
-        # PostgreSQL placeholder is %s
+        # CORREGIDO: Usar nombres de columnas en minúsculas y sin comillas dobles
         cursor.execute(
-            'INSERT INTO "dbo"."Cliente" ("Nombre", "Email", "Telefono", "RUC") VALUES (%s, %s, %s, %s)',
+            'INSERT INTO public.cliente (nombre, email, telefono, ruc) VALUES (%s, %s, %s, %s)',
             (nombre, email, telefono, ruc)
         )
         conn.commit()
@@ -93,34 +94,31 @@ def registrar_nuevo_cliente(nombre, email=None, telefono=None, ruc=None):
         return True, f"¡Registro exitoso! Te damos la bienvenida {nombre}.", registered_identifier
 
     # Catch psycopg2.errors.IntegrityError specifically for uniqueness constraints
-    except psycopg2.IntegrityError as e: # Changed from pyodbc.IntegrityError
+    except psycopg2.IntegrityError as e:
         print(f"ERROR (registrar_nuevo_cliente - psycopg2 IntegrityError): {e.pgcode if hasattr(e, 'pgcode') else 'N/A'} - {e.pgerror if hasattr(e, 'pgerror') else e}")
         if conn:
             conn.rollback() # Si hay un error de DB, revertir la transacción
         
-        # PostgreSQL error codes for unique violation is '23505'
-        # or you can parse the error message.
         error_msg = str(e)
         if hasattr(e, 'pgcode') and e.pgcode == '23505': # PostgreSQL unique violation code
-            if "email" in error_msg.lower(): # Check if the error message mentions 'email'
+            if "email" in error_msg.lower():
                 return False, "El Email ya está en uso. Por favor, intente con otro o inicie sesión.", None
-            elif "ruc" in error_msg.lower(): # Check if the error message mentions 'ruc'
+            elif "ruc" in error_msg.lower():
                 return False, "El RUC ya está en uso. Por favor, intente con otro o inicie sesión.", None
             else:
                 return False, "Dato duplicado (Email o RUC) ya registrado. Por favor, verifique.", None
-        # For other integrity errors (e.g., NOT NULL constraint), you might need to check other pgcodes or messages
         return False, f"Error de integridad de la base de datos al registrar: {str(e)}. Por favor, verifique sus datos.", None
     
-    except psycopg2.Error as e: # Catch other psycopg2 errors (e.g., operational errors)
+    except psycopg2.Error as e:
         print(f"ERROR (registrar_nuevo_cliente - psycopg2 general): {e.pgcode if hasattr(e, 'pgcode') else 'N/A'} - {e.pgerror if hasattr(e, 'pgerror') else e}")
         if conn:
-            conn.rollback() # Si hay un error, revertir la transacción
+            conn.rollback()
         return False, f"Ocurrió un error de base de datos al registrar. Por favor, intente de nuevo más tarde.", None
     
     except Exception as e:
         print(f"ERROR (registrar_nuevo_cliente - general): {e}")
         if conn:
-            conn.rollback() # Si hay un error, revertir la transacción
+            conn.rollback()
         return False, f"Ocurrió un error inesperado al registrar. Por favor, intente de nuevo más tarde.", None
     finally:
         if conn:
