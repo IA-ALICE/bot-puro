@@ -1,36 +1,39 @@
-import pyodbc
+import os
+import psycopg2
+from psycopg2 import OperationalError
 
 def get_db_connection():
-    """Establece y retorna una conexión a la base de datos SQL Server."""
+    """Establece y retorna una conexión a la base de datos PostgreSQL (Supabase)."""
     try:
-        connection = pyodbc.connect(
-            'DRIVER={ODBC Driver 17 for SQL Server};' # Asegúrate de tener este driver instalado
-            'SERVER=DESKTOP-LRGLGH6;'
-            'DATABASE=Bd_jyp;'
-            'Trusted_Connection=yes;'
+        connection = psycopg2.connect(
+            host=os.environ.get('DB_HOST'),
+            database=os.environ.get('DB_NAME'),
+            user=os.environ.get('DB_USER'),
+            password=os.environ.get('DB_PASSWORD'),
+            port=os.environ.get('DB_PORT', '5432') # 5432 es el puerto por defecto de PostgreSQL
         )
-        # print("Conexión a la base de datos exitosa.") # Descomentar para depuración
+        print("Conexión a la base de datos Supabase exitosa.")
         return connection
-    except pyodbc.Error as ex:
-        sqlstate = ex.args[0]
-        print(f"CRÍTICO: Error al conectar a la base de datos: {sqlstate} - {ex}")
-        if sqlstate == '28000':
-            print("Detalle: Error de autenticación. Verifique credenciales o configuración de Trusted_Connection.")
-        elif sqlstate == '08001':
-            print("Detalle: Error de red o instancia. No se pudo establecer conexión con el servidor SQL.")
-        elif sqlstate == '42000': # Puede ser "Cannot open database..."
-            print(f"Detalle: Error de SQL. Verifique el nombre de la base de datos ('Bd_jyp') o la sintaxis. Mensaje original: {ex}")
+    except OperationalError as e:
+        print(f"CRÍTICO: Error de operación al conectar a la base de datos: {e}")
+        print("Asegúrate de que las variables de entorno para la base de datos estén configuradas correctamente.")
         return None
     except Exception as e:
         print(f"CRÍTICO: Un error inesperado ocurrió al intentar conectar a la base de datos: {e}")
         return None
 
 # Ejemplo de prueba (opcional, puedes ejecutar python DB.py para probar la conexión)
-# if __name__ == '__main__':
-#     print("Intentando conectar a la base de datos...")
-#     conn = get_db_connection()
-#     if conn:
-#         print("Prueba de conexión: Establecida y cerrada correctamente.")
-#         conn.close()
-#     else:
-#         print("Prueba de conexión: Fallo al establecer la conexión.")
+if __name__ == '__main__':
+    # Para probar localmente, puedes configurar las variables de entorno aquí
+    # o mejor aún, usar un archivo .env y la librería python-dotenv
+    # (¡Pero NO subas .env a tu repositorio Git!)
+    # import dotenv
+    # dotenv.load_dotenv()
+
+    print("Intentando conectar a la base de datos Supabase...")
+    conn = get_db_connection()
+    if conn:
+        print("Prueba de conexión: Establecida y cerrada correctamente.")
+        conn.close()
+    else:
+        print("Prueba de conexión: Fallo al establecer la conexión.")
