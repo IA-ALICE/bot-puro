@@ -1,0 +1,8 @@
+[
+    {"question": "Mi PC no enciende.", "answer": "Verifica el cable de alimentación, la fuente de poder, y que el monitor esté conectado correctamente. Prueba otra toma de corriente."},
+    {"question": "¿Por qué mi pantalla está en negro?", "answer": "Puede ser el monitor, el cable de video, o un problema con la tarjeta gráfica o la RAM. Revisa las conexiones o prueba otro monitor."},
+    {"question": "¿Cómo limpio el polvo de mi laptop?", "answer": "Utiliza aire comprimido para limpiar los ventiladores y las rejillas de ventilación. Mantén el spray en posición vertical y en ráfagas cortas para evitar condensación. También puedes usar un cepillo suave o un paño de microfibra para las superficies."},
+    {"question": "¿Qué hago si mi disco duro hace un ruido extraño?", "answer": "Los ruidos extraños como clics o raspados suelen indicar un fallo inminente del disco duro. Lo más importante es hacer una copia de seguridad de tus datos lo antes posible. Luego, considera reemplazar el disco duro."},
+    {"question": "¿Cómo reinstalo Windows?", "answer": "Necesitarás un USB de instalación de Windows. Arranca desde el USB, sigue las instrucciones en pantalla, selecciona la partición donde instalar y formatea si es necesario."},
+    {"question": "Mi impresora no imprime.", "answer": "Verifica que esté encendida, conectada correctamente (USB o red), y que tenga papel y tinta. Revisa el estado de la cola de impresión y los drivers."}
+]

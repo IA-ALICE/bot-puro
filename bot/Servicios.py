@@ -1,125 +1,135 @@
 # bot/Servicios.py
-from .DB import get_db_connection
-import psycopg2 # Import psycopg2 to handle its specific errors
+import os
+import google.generativeai as genai
+import json
 
-def obtener_servicios_principales():
-    conn = None
+API_KEY = "AIzaSyB3DXrrWYgKYj8W7tnApL2m0t3T-LAfpKE"
+
+ia_model = None
+
+if not API_KEY:
+    print("Error: La clave API no está definida. El asistente de IA basado en Gemini no estará disponible.")
+else:
     try:
-        conn = get_db_connection()
-        if conn is None:
-            print("ERROR (obtener_servicios_principales): Fallo en la conexión a la base de datos.")
-            return []
-        cursor = conn.cursor()
-        
-        # CORREGIDO: Nombres de columna en minúsculas y sin comillas dobles
-        # Asumiendo 'Servicios' se convirtió a 'servicios' y 'id' a 'id'.
-        # Si 'Servicios' es el nombre de la columna que contiene el texto del servicio,
-        # su nombre en minúsculas debería ser 'servicios' o 'nombre_servicio', etc.
-        # Aquí asumo 'servicios' por ser coherente con el nombre de la tabla.
-        cursor.execute('SELECT id, servicios FROM public.servicios') 
-        
-        servicios = []
-        for row in cursor.fetchall():
-            servicios.append({"id": row[0], "nombre": row[1]})
-        print(f"DEBUG (obtener_servicios_principales): Servicios principales obtenidos: {servicios}")
-        return servicios
-    except psycopg2.Error as e:
-        print(f"ERROR (obtener_servicios_principales - psycopg2): {e.pgcode if hasattr(e, 'pgcode') else 'N/A'} - {e.pgerror if hasattr(e, 'pgerror') else e}")
-        return []
+        genai.configure(api_key=API_KEY)
+
+        print("\n--- Modelos disponibles para tu clave API ---")
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                print(f"  - Nombre: {m.name}, Métodos soportados: {m.supported_generation_methods}")
+        print("------------------------------------------\n")
+
+        ia_model = genai.GenerativeModel('gemini-1.5-flash')
+        print("API de Google Gemini configurada y modelo 'gemini-1.5-flash' listo.")
     except Exception as e:
-        print(f"ERROR (obtener_servicios_principales - general): {e}")
-        return []
-    finally:
-        if conn:
-            conn.close()
+        print(f"Error al configurar o inicializar el modelo Gemini: {e}")
+        print("El asistente de IA basado en Gemini no estará disponible.")
 
-def obtener_catalogo_por_servicio(servicio_id):
-    conn = None
+knowledge_base = []
+knowledge_base_path = os.path.join(os.path.dirname(__file__), '..', 'knowledge_base.json')
+try:
+    with open(knowledge_base_path, 'r', encoding='utf-8') as f:
+        knowledge_base = json.load(f)
+    print(f"Base de conocimiento cargada exitosamente desde: {knowledge_base_path}")
+except FileNotFoundError:
+    print(f"Advertencia: No se encontró la base de conocimiento en {knowledge_base_path}. El bot dependerá únicamente del modelo Gemini.")
+except Exception as e:
+    print(f"Error cargando la base de conocimiento: {e}. El bot dependerá únicamente del modelo Gemini.")
+
+def generate_ia_response(prompt):
+    if ia_model is None:
+        return "Lo siento, el modelo de IA no está disponible en este momento."
+
     try:
-        conn = get_db_connection()
-        if conn is None:
-            print("ERROR (obtener_catalogo_por_servicio): Fallo en la conexión a la base de datos.")
-            return []
-        cursor = conn.cursor()
-        
-        # CORREGIDO: Nombres de tablas y columnas en minúsculas y sin comillas dobles
-        cursor.execute(
-            'SELECT cs.id, cs.catalogo, cs.precio '
-            'FROM public.servicios s ' # CORREGIDO: tabla servicios en minúsculas
-            'JOIN public.servicio_catalogo sc ON s.id = sc.id_servicio ' # CORREGIDO: tabla servicio_catalogo y columnas id, id_servicio
-            'JOIN public.catalogo_servicio cs ON sc.id_catalogo = cs.id ' # CORREGIDO: tabla catalogo_servicio y columnas id_catalogo, id
-            'WHERE s.id = %s', # Columna 'id'
-            (servicio_id,)
+        response = ia_model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                candidate_count=1,
+                max_output_tokens=150,
+                temperature=0.5,
+                top_p=0.9,
+            )
         )
-        catalogo = []
-        for row in cursor.fetchall():
-            catalogo.append({"id": row[0], "nombre_apartado": row[1], "precio": float(row[2]) if row[2] is not None else None})
-        print(f"DEBUG (obtener_catalogo_por_servicio): Catálogo para servicio_id {servicio_id}: {catalogo}")
-        return catalogo
-    except psycopg2.Error as e:
-        print(f"ERROR (obtener_catalogo_por_servicio - psycopg2): {e.pgcode if hasattr(e, 'pgcode') else 'N/A'} - {e.pgerror if hasattr(e, 'pgerror') else e}")
-        return []
+        text_response = ""
+        if response.candidates:
+            if response.candidates[0].content.parts:
+                text_response = response.candidates[0].content.parts[0].text
+
+        if not text_response:
+            return "Lo siento, no pude generar una respuesta. Por favor, intenta de nuevo."
+
+        if text_response.startswith(prompt):
+            text_response = text_response[len(prompt):].strip()
+
+        return text_response.strip()
     except Exception as e:
-        print(f"ERROR (obtener_catalogo_por_servicio - general): {e}")
-        return []
-    finally:
-        if conn:
-            conn.close()
+        print(f"Error generando respuesta del modelo Gemini: {e}")
+        return "Lo siento, no pude procesar su consulta en este momento. Por favor, intenta de nuevo más tarde o verifica la configuración de la IA."
+
+def find_relevant_knowledge(query):
+    relevant_info = []
+    query_lower = query.lower()
+    for entry in knowledge_base:
+        if any(keyword in entry["question"].lower() for keyword in query_lower.split()):
+            relevant_info.append(f"Pregunta: {entry['question']}\nRespuesta: {entry['answer']}")
+    return "\n".join(relevant_info)
+
+def responder_con_ia(user_query, topic=None):
+    if ia_model is None:
+        return "Lo siento, el asistente de IA no está disponible en este momento debido a un problema de configuración."
+
+    context_info = find_relevant_knowledge(user_query)
+
+    if context_info:
+        prompt = (
+            f"Eres un asistente experto en reparación de computadoras y periféricos. "
+            f"Aquí tienes información relevante de nuestra base de datos:\n"
+            f"{context_info}\n\n"
+            f"El usuario tiene una consulta técnica. "
+            f"Responde de forma clara, precisa y breve (3 a 5 líneas máximo). "
+            f"Incluye solo los detalles útiles para solucionar el problema.\n"
+            f"Consulta del usuario: {user_query}\n"
+            f"Respuesta:"
+        )
+    else:
+        prompt = (
+            f"Eres un asistente experto en reparación de computadoras y periféricos. "
+            f"Consulta: {user_query}. "
+            f"Proporciona una respuesta clara, práctica y no muy extensa (máximo 5 líneas), "
+            f"centrándote en resolver el problema sin rodeos."
+        )
+
+    return generate_ia_response(prompt)
+
+# --- Funciones de base de datos existentes ---
+def obtener_servicios_principales():
+    return [{"id": 1, "nombre": "Internet"}, {"id": 2, "nombre": "Telefonía"}]
+
+def obtener_catalogo_por_servicio(service_id):
+    if service_id == 1:
+        return [{"id": 101, "nombre_apartado": "Planes de Fibra Óptica", "precio": "S/80"},
+                {"id": 102, "nombre_apartado": "Cobertura", "precio": None}]
+    elif service_id == 2:
+        return [{"id": 201, "nombre_apartado": "Tarifas Móviles", "precio": "S/30"},
+                {"id": 202, "nombre_apartado": "Roaming Internacional", "precio": None}]
+    return []
 
 def obtener_preguntas_por_catalogo(catalogo_id):
-    conn = None
-    try:
-        conn = get_db_connection()
-        if conn is None:
-            print("ERROR (obtener_preguntas_por_catalogo): Fallo en la conexión a la base de datos.")
-            return []
-        cursor = conn.cursor()
-        
-        # CORREGIDO: Nombres de columnas en minúsculas y sin comillas dobles
-        cursor.execute(
-            'SELECT id_pregunta_servios, pregunta FROM public.pregunta_servicio WHERE id_catalogo_servicio = %s',
-            (catalogo_id,)
-        )
-        preguntas = []
-        for row in cursor.fetchall():
-            preguntas.append({"id": row[0], "texto": row[1]})
-        print(f"DEBUG (obtener_preguntas_por_catalogo): Preguntas para catalogo_id {catalogo_id}: {preguntas}")
-        return preguntas
-    except psycopg2.Error as e:
-        print(f"ERROR (obtener_preguntas_por_catalogo - psycopg2): {e.pgcode if hasattr(e, 'pgcode') else 'N/A'} - {e.pgerror if hasattr(e, 'pgerror') else e}")
-        return []
-    except Exception as e:
-        print(f"ERROR (obtener_preguntas_por_catalogo - general): {e}")
-        return []
-    finally:
-        if conn:
-            conn.close()
+    if catalogo_id == 101:
+        return [{"id": 1001, "texto": "¿Cómo puedo cambiar mi plan de fibra óptica?"},
+                {"id": 1002, "texto": "¿Cuáles son los requisitos para instalar fibra óptica?"}]
+    elif catalogo_id == 201:
+        return [{"id": 2001, "texto": "¿Cómo recargar mi línea móvil?"},
+                {"id": 2002, "texto": "¿Cuáles son los paquetes de datos disponibles?"}]
+    return []
 
 def obtener_respuestas_de_la_pregunta(pregunta_id):
-    conn = None
-    try:
-        conn = get_db_connection()
-        if conn is None:
-            print("ERROR (obtener_respuestas_de_la_pregunta): Fallo en la conexión a la base de datos.")
-            return []
-        cursor = conn.cursor()
-        
-        # CORREGIDO: Nombres de columnas en minúsculas y sin comillas dobles
-        cursor.execute(
-            'SELECT respuestas FROM public.respuesta_servicios WHERE id_pregunta_servios = %s',
-            (pregunta_id,)
-        )
-        respuestas = []
-        for row in cursor.fetchall():
-            respuestas.append(row[0])
-        print(f"DEBUG (obtener_respuestas_de_la_pregunta): Respuestas para pregunta_id {pregunta_id}: {respuestas}")
-        return respuestas
-    except psycopg2.Error as e:
-        print(f"ERROR (obtener_respuestas_de_la_pregunta - psycopg2): {e.pgcode if hasattr(e, 'pgcode') else 'N/A'} - {e.pgerror if hasattr(e, 'pgerror') else e}")
-        return []
-    except Exception as e:
-        print(f"ERROR (obtener_respuestas_de_la_pregunta - general): {e}")
-        return []
-    finally:
-        if conn:
-            conn.close()
+    if pregunta_id == 1001:
+        return ["Puedes cambiar tu plan de fibra óptica a través de nuestra página web en la sección 'Mi Cuenta' o llamando a nuestro centro de atención."]
+    elif pregunta_id == 1002:
+        return ["Los requisitos para instalar fibra óptica incluyen tener cobertura en tu zona y presentar tu DNI."]
+    elif pregunta_id == 2001:
+        return ["Puedes recargar tu línea móvil mediante nuestra app, en agentes autorizados, o en nuestra web."]
+    elif pregunta_id == 2002:
+        return ["Ofrecemos diversos paquetes de datos, desde 5GB hasta ilimitados. Consulta nuestra web para más detalles."]
+    return ["Lo siento, no tengo una respuesta específica para esa pregunta en este momento."]

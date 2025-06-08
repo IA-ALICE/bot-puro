@@ -45,13 +45,13 @@ body {
     bottom: 100px;
     right: 30px;
     width: 380px;
-    height: 500px;
+    height: 500px; /* Altura fija para el contenedor del chat */
     border: 1px solid #ccc;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: hidden; /* Asegura que el contenido interno se gestione por overflow */
     background-color: #fff;
     z-index: 1000;
     transition: transform 0.3s ease-out, opacity 0.3s ease-out;
@@ -72,7 +72,6 @@ body {
 }
 
 
-/* Resto del CSS interno del chat (sin cambios en esta sección) */
 #chat-header {
     background-color: #007bff;
     color: white;
@@ -83,27 +82,31 @@ body {
     border-top-left-radius: 12px;
     border-top-right-radius: 12px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    flex-shrink: 0;
+    flex-shrink: 0; /* No permite que el header se encoja */
 }
 
 #chat-messages {
-    flex-grow: 1;
+    flex-grow: 1; /* Permite que el área de mensajes ocupe el espacio disponible */
     padding: 15px;
-    overflow-y: auto;
+    overflow-y: auto; /* Permite scroll si los mensajes exceden la altura */
     background-color: #e5ddd5;
     display: flex;
     flex-direction: column;
+    gap: 12px; /* Espacio entre burbujas */
+    /* Add specific maximum height if flex-grow is not enough, but usually flex-grow handles it */
+    /* max-height: calc(100% - 60px - 60px); /* Example: 100% - header height - input area height */
 }
 
 .message-bubble {
+    box-sizing: border-box; /* Importante para el cálculo del padding/border */
     max-width: 85%;
     padding: 10px 15px;
     border-radius: 20px;
-    margin-bottom: 12px;
-    word-wrap: break-word;
+    word-wrap: break-word; /* Permite que las palabras largas se rompan */
+    word-break: break-word; /* Force words to break if they exceed container width */
     font-size: 0.9em;
-    line-height: 1.4;
-    white-space: pre-wrap;
+    line-height: 1.5; /* Ligeramente aumentado para mejor lectura y evitar cortes */
+    white-space: pre-wrap; /* Mantiene saltos de línea y espacios */
 }
 
 .message-bubble.bot {
@@ -119,13 +122,18 @@ body {
     border-bottom-right-radius: 5px;
 }
 
+/* ESTILO PARA NEGRITAS */
+.message-bubble strong {
+    font-weight: bold;
+}
+
 #chat-input-container {
     display: flex;
     padding: 10px 15px;
     border-top: 1px solid #eee;
     background-color: #f7f7f7;
     align-items: center;
-    flex-shrink: 0;
+    flex-shrink: 0; /* No permite que el input area se encoja */
 }
 
 #user-input {
@@ -141,54 +149,32 @@ body {
     background-color: #007bff;
     color: white;
     border: none;
-    padding: 8px 15px;
-    border-radius: 25px;
+    padding: 10px;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     cursor: pointer;
     transition: background-color 0.3s ease;
-    font-size: 0.9em;
-    font-weight: bold;
+    font-size: 0; /* Oculta el texto "Enviar" */
 }
+
+/* ESTILO PARA EL SVG DENTRO DEL BOTÓN DE ENVIAR */
+#send-button svg {
+    width: 20px;
+    height: 20px;
+    stroke: white;
+    fill: none;
+}
+
 
 #send-button:hover {
     background-color: #0056b3;
 }
 
 #send-button:disabled {
-    background-color: #a0a0a0;
-    cursor: not-allowed;
-}
-
-#options-container {
-    padding: 10px 15px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    justify-content: center;
-    border-top: 1px solid #eee;
-    background-color: #f7f7f7;
-    flex-shrink: 0;
-}
-
-.option-button {
-    background-color: #28a745;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    font-size: 0.85em;
-    flex-grow: 1;
-    min-width: 100px;
-    max-width: calc(50% - 4px);
-    text-align: center;
-}
-
-.option-button:hover {
-    background-color: #218838;
-}
-
-.option-button:disabled {
     background-color: #a0a0a0;
     cursor: not-allowed;
 }

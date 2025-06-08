@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asistente J&P</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2.2">
 </head>
 <body>
     <img id="chat-toggle-button" class="chat-toggle-button" src="{{ url_for('static', filename='images/chat_icon.jpeg') }}" alt="Chat" class="chat-icon">
@@ -15,11 +15,14 @@
         </div>
         <div id="chat-messages">
             </div>
-        <div id="options-container">
-            </div>
         <div id="chat-input-container">
-            <input type="text" id="user-input" placeholder="Escribe tu mensaje o número...">
-            <button id="send-button">Enviar</button>
+            <input type="text" id="user-input" placeholder="Escribe tu mensaje...">
+            <button id="send-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-send">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+            </button>
         </div>
     </div>
 
