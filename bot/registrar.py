@@ -1,4 +1,3 @@
-import pyodbc
 import re # Importar el módulo de expresiones regulares
 from bot.DB import get_db_connection
 

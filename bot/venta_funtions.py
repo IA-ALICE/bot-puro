@@ -1,4 +1,3 @@
-import pyodbc
 from bot.DB import get_db_connection # Importar desde bot.DB
 
 def obtener_nombres_de_categoria():

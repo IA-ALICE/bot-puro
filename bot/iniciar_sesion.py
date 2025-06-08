@@ -1,4 +1,3 @@
-import pyodbc
 from bot.DB import get_db_connection
 
 def verificar_credenciales(email_o_ruc):

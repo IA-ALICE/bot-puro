@@ -2,7 +2,6 @@ from flask import Flask, render_template, request, jsonify, session
 from flask_session import Session
 import os
 import secrets
-import pyodbc # Solo para la excepción general, la conexión se maneja en DB.py
 
 from bot.venta_funtions import obtener_nombres_de_categoria, obtener_contenido_promociones, obtener_contenido_categoria
 from bot.Servicios import obtener_servicios_principales, obtener_catalogo_por_servicio, obtener_preguntas_por_catalogo, obtener_respuestas_de_la_pregunta
