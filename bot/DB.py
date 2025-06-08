@@ -8,11 +8,11 @@ def get_db_connection():
         # ¡IMPORTANTE! Asegúrate de que 'Minecraftbedrock45$' es tu contraseña REAL.
         # Usa el nombre de usuario completo que incluye la referencia del proyecto.
         connection = psycopg2.connect(
-            host='DB_HOST',  # Host del Pooler de Supabase
-            database='DB_NAME',                         # Nombre de la base de datos
-            user='DB_USER',       # ¡Nombre de usuario completo con referencia de proyecto!
-            password='DB_PASSWORD',              # Tu contraseña real de Supabase
-            port='DB_PORT'                                  # Puerto del Pooler (usualmente 5432 para este pooler)
+            host='aws-0-sa-east-1.pooler.supabase.com',  # Host del Pooler de Supabase
+            database='postgres',                         # Nombre de la base de datos
+            user='postgres.yssrtcfsydyzjjnpidri',       # ¡Nombre de usuario completo con referencia de proyecto!
+            password='Minecraftbedrock45$',              # Tu contraseña real de Supabase
+            port='5432'                                  # Puerto del Pooler (usualmente 5432 para este pooler)
         )
         print("Conexión a la base de datos Supabase exitosa (via Pooler).")
         return connection
