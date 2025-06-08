@@ -1,0 +1,194 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    background-color: #f0f2f5;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+}
+
+/* Estilo para el botón flotante */
+.chat-toggle-button {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5em;
+    z-index: 1001;
+    transition: background-color 0.3s ease;
+}
+
+.chat-toggle-button:hover {
+    background-color: #0056b3;
+}
+
+.chat-icon {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+
+/* Contenedor principal del chat */
+#chat-container {
+    position: fixed;
+    bottom: 100px;
+    right: 30px;
+    width: 380px;
+    height: 500px;
+    border: 1px solid #ccc;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: #fff;
+    z-index: 1000;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+/* Clase para ocultar el chat */
+#chat-container.hidden {
+    transform: translateY(20px);
+    opacity: 0;
+    pointer-events: none; /* Asegura que no sea interactuable cuando está oculto */
+}
+
+/* Clase para mostrar el chat */
+#chat-container.visible {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto; /* Permite la interacción cuando está visible */
+}
+
+
+/* Resto del CSS interno del chat (sin cambios en esta sección) */
+#chat-header {
+    background-color: #007bff;
+    color: white;
+    padding: 15px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.1em;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+#chat-messages {
+    flex-grow: 1;
+    padding: 15px;
+    overflow-y: auto;
+    background-color: #e5ddd5;
+    display: flex;
+    flex-direction: column;
+}
+
+.message-bubble {
+    max-width: 85%;
+    padding: 10px 15px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    word-wrap: break-word;
+    font-size: 0.9em;
+    line-height: 1.4;
+    white-space: pre-wrap;
+}
+
+.message-bubble.bot {
+    background-color: #dcf8c6;
+    align-self: flex-start;
+    border-bottom-left-radius: 5px;
+}
+
+.message-bubble.user {
+    background-color: #007bff;
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 5px;
+}
+
+#chat-input-container {
+    display: flex;
+    padding: 10px 15px;
+    border-top: 1px solid #eee;
+    background-color: #f7f7f7;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+#user-input {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 25px;
+    margin-right: 8px;
+    font-size: 0.9em;
+}
+
+#send-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+#send-button:hover {
+    background-color: #0056b3;
+}
+
+#send-button:disabled {
+    background-color: #a0a0a0;
+    cursor: not-allowed;
+}
+
+#options-container {
+    padding: 10px 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    border-top: 1px solid #eee;
+    background-color: #f7f7f7;
+    flex-shrink: 0;
+}
+
+.option-button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-size: 0.85em;
+    flex-grow: 1;
+    min-width: 100px;
+    max-width: calc(50% - 4px);
+    text-align: center;
+}
+
+.option-button:hover {
+    background-color: #218838;
+}
+
+.option-button:disabled {
+    background-color: #a0a0a0;
+    cursor: not-allowed;
+}
